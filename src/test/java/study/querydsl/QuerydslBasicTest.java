@@ -252,4 +252,48 @@ public class QuerydslBasicTest {
            .containsExactly("teamA", "teamB");
 
    }
+
+    /**
+     * 예) 회원과 팀을 조회하면서, 팀 이름이 teamA인 팀만 조인, 외원은 모두 조회
+     */
+    @Test
+    void joinONFiltering () throws Exception {
+        //given
+        List<Tuple> result = queryFactory
+                .select(member, team)
+                .from(member)
+                .leftJoin(member.team, team).on(team.name.eq("teamA"))
+                .fetch();
+        //when
+
+        //then
+        for (Tuple tuple : result) {
+            System.out.println("tuple = " + tuple);
+        }
+    }
+
+    /**
+     * 세타 조인
+     * 회원의 이름이 팀 이름과 같은 대상 외부 조인
+     */
+    @Test
+    void joinOnNoRelation() throws Exception{
+        //given
+        em.persist(new Member("teamA"));
+        em.persist(new Member("teamB"));
+        //when
+        List<Tuple> result = queryFactory
+                .select(member, team)
+                .from(member)
+                .leftJoin(team).on(member.username.eq(team.name))
+                .where(member.username.eq(team.name))
+                .fetch();
+        //then
+        assertThat(result)
+                .extracting("username")
+                .containsExactly("teamA", "teamB");
+
+    }
+
+
 }

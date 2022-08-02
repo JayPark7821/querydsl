@@ -2,13 +2,16 @@ package study.querydsl.repository;
 
 import com.querydsl.core.QueryResults;
 import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.support.PageableExecutionUtils;
 import study.querydsl.dto.MemberSearchCondition;
 import study.querydsl.dto.MemberTeamDto;
 import study.querydsl.dto.QMemberTeamDto;
+import study.querydsl.entity.Member;
 
 import javax.persistence.EntityManager;
 import java.util.List;
@@ -69,16 +72,7 @@ public class MemberRepositoryImpl implements MemberRepositoryCustom{
     @Override
     public Page<MemberTeamDto> searchPageComplex(MemberSearchCondition condition, Pageable pageable) {
 
-        // 카운트 쿼리를 먼저하고 데이터가 없으면 본쿼리를 X
-        long count = queryFactory
-                .select(member)
-                .from(member)
-                .leftJoin(member.team, team)
-                .where(usernameEq(condition.getUsername()),
-                        teamNameEq(condition.getTeamName()),
-                        ageGoe(condition.getAgeGoe()),
-                        ageLoe(condition.getAgeLoe()))
-                .fetchCount();
+
 
         List<MemberTeamDto> results = queryFactory
                 .select(new QMemberTeamDto(member.id.as("memberId")
@@ -96,10 +90,18 @@ public class MemberRepositoryImpl implements MemberRepositoryCustom{
                 .limit(pageable.getPageSize())
                 .fetch();
 
+        // 카운트 쿼리를 먼저하고 데이터가 없으면 본쿼리를 X
+        JPAQuery<Member> countQuery = queryFactory
+                .select(member)
+                .from(member)
+                .leftJoin(member.team, team)
+                .where(usernameEq(condition.getUsername()),
+                        teamNameEq(condition.getTeamName()),
+                        ageGoe(condition.getAgeGoe()),
+                        ageLoe(condition.getAgeLoe()));
 
-
-
-        return new PageImpl<>(results, pageable, count);
+        return PageableExecutionUtils.getPage(results, pageable,countQuery::fetchCount);
+//        return new PageImpl<>(results, pageable, count);
     }
 
     private BooleanExpression ageLoe(Integer ageLoe) {

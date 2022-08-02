@@ -2,122 +2,162 @@ package study.querydsl.repository;
 
 import com.querydsl.core.QueryResults;
 import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.jpa.JPQLQuery;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.support.QuerydslRepositorySupport;
 import org.springframework.data.support.PageableExecutionUtils;
+
 import study.querydsl.dto.MemberSearchCondition;
 import study.querydsl.dto.MemberTeamDto;
 import study.querydsl.dto.QMemberTeamDto;
 import study.querydsl.entity.Member;
 
 import javax.persistence.EntityManager;
+
 import java.util.List;
 
 import static org.springframework.util.StringUtils.hasText;
 import static study.querydsl.entity.QMember.member;
 import static study.querydsl.entity.QTeam.team;
 
-public class MemberRepositoryImpl implements MemberRepositoryCustom{
+public class MemberRepositoryImpl  implements MemberRepositoryCustom { //extends QuerydslRepositorySupport
 
-    private final JPAQueryFactory queryFactory;
+	// public MemberRepositoryImpl() {
+	// 	super(Member.class);
+	// }
 
-    public MemberRepositoryImpl(EntityManager em) {
-        this.queryFactory = new JPAQueryFactory(em);
-    }
+	private final JPAQueryFactory queryFactory;
 
-    @Override
-    public List<MemberTeamDto> search(MemberSearchCondition condition) {
-        return queryFactory
-                .select(new QMemberTeamDto(member.id.as("memberId")
-                        ,member.username
-                        ,member.age
-                        ,team.id.as("teamId")
-                        ,team.name.as("teamName")))
-                .from(member)
-                .leftJoin(member.team, team)
-                .where(usernameEq(condition.getUsername()),
-                        teamNameEq(condition.getTeamName()),
-                        ageGoe(condition.getAgeGoe()),
-                        ageLoe(condition.getAgeLoe()))
-                .fetch();
-    }
+	public MemberRepositoryImpl(EntityManager em) {
+	    this.queryFactory = new JPAQueryFactory(em);
+	}
 
-    @Override
-    public Page<MemberTeamDto> searchPageSimple(MemberSearchCondition condition, Pageable pageable) {
-        QueryResults<MemberTeamDto> results = queryFactory
-                .select(new QMemberTeamDto(member.id.as("memberId")
-                        , member.username
-                        , member.age
-                        , team.id.as("teamId")
-                        , team.name.as("teamName")))
-                .from(member)
-                .leftJoin(member.team, team)
-                .where(usernameEq(condition.getUsername()),
-                        teamNameEq(condition.getTeamName()),
-                        ageGoe(condition.getAgeGoe()),
-                        ageLoe(condition.getAgeLoe()))
-                .offset(pageable.getOffset())
-                .limit(pageable.getPageSize())
-                .fetchResults();
+	@Override
+	public List<MemberTeamDto> search(MemberSearchCondition condition) {
+		// List<MemberTeamDto> result = from(member)
+		// 	.leftJoin(member.team, team)
+		// 	.where(usernameEq(condition.getUsername()),
+		// 		teamNameEq(condition.getTeamName()),
+		// 		ageGoe(condition.getAgeGoe()),
+		// 		ageLoe(condition.getAgeLoe()))
+		// 	.select(new QMemberTeamDto(member.id.as("memberId")
+		// 		, member.username
+		// 		, member.age
+		// 		, team.id.as("teamId")
+		// 		, team.name.as("teamName")))
+		// 	.fetch();
+		return queryFactory
+		        .select(new QMemberTeamDto(member.id.as("memberId")
+		                ,member.username
+		                ,member.age
+		                ,team.id.as("teamId")
+		                ,team.name.as("teamName")))
+		        .from(member)
+		        .leftJoin(member.team, team)
+		        .where(usernameEq(condition.getUsername()),
+		                teamNameEq(condition.getTeamName()),
+		                ageGoe(condition.getAgeGoe()),
+		                ageLoe(condition.getAgeLoe()))
+		        .fetch();
+	}
 
-        List<MemberTeamDto> content = results.getResults();
-        long total = results.getTotal();
+	@Override
+	public Page<MemberTeamDto> searchPageSimple(MemberSearchCondition condition, Pageable pageable) {
+		QueryResults<MemberTeamDto> results = queryFactory
+			.select(new QMemberTeamDto(member.id.as("memberId")
+				, member.username
+				, member.age
+				, team.id.as("teamId")
+				, team.name.as("teamName")))
+			.from(member)
+			.leftJoin(member.team, team)
+			.where(usernameEq(condition.getUsername()),
+				teamNameEq(condition.getTeamName()),
+				ageGoe(condition.getAgeGoe()),
+				ageLoe(condition.getAgeLoe()))
+			.offset(pageable.getOffset())
+			.limit(pageable.getPageSize())
+			.fetchResults();
 
-        return new PageImpl<>(content, pageable, total);
-    }
+		List<MemberTeamDto> content = results.getResults();
+		long total = results.getTotal();
 
-    @Override
-    public Page<MemberTeamDto> searchPageComplex(MemberSearchCondition condition, Pageable pageable) {
+		return new PageImpl<>(content, pageable, total);
+	}
 
+	// @Override
+	// public Page<MemberTeamDto> searchPageSimple2(MemberSearchCondition condition, Pageable pageable) {
+	//
+	// 	JPQLQuery<MemberTeamDto> results = from(member)
+	// 		.leftJoin(member.team, team)
+	// 		.where(usernameEq(condition.getUsername()),
+	// 			teamNameEq(condition.getTeamName()),
+	// 			ageGoe(condition.getAgeGoe()),
+	// 			ageLoe(condition.getAgeLoe()))
+	// 		.select(new QMemberTeamDto(member.id.as("memberId")
+	// 			, member.username
+	// 			, member.age
+	// 			, team.id.as("teamId")
+	// 			, team.name.as("teamName")));
+	//
+	// 	JPQLQuery<MemberTeamDto> jpaQuery = getQuerydsl().applyPagination(pageable, results);
+	//
+	// 	jpaQuery.fetch();
+	// 	return new PageImpl<>(content, pageable, total);
+	// }
 
+	@Override
+	public Page<MemberTeamDto> searchPageComplex(MemberSearchCondition condition, Pageable pageable) {
 
-        List<MemberTeamDto> results = queryFactory
-                .select(new QMemberTeamDto(member.id.as("memberId")
-                        , member.username
-                        , member.age
-                        , team.id.as("teamId")
-                        , team.name.as("teamName")))
-                .from(member)
-                .leftJoin(member.team, team)
-                .where(usernameEq(condition.getUsername()),
-                        teamNameEq(condition.getTeamName()),
-                        ageGoe(condition.getAgeGoe()),
-                        ageLoe(condition.getAgeLoe()))
-                .offset(pageable.getOffset())
-                .limit(pageable.getPageSize())
-                .fetch();
+		List<MemberTeamDto> results = queryFactory
+			.select(new QMemberTeamDto(member.id.as("memberId")
+				, member.username
+				, member.age
+				, team.id.as("teamId")
+				, team.name.as("teamName")))
+			.from(member)
+			.leftJoin(member.team, team)
+			.where(usernameEq(condition.getUsername()),
+				teamNameEq(condition.getTeamName()),
+				ageGoe(condition.getAgeGoe()),
+				ageLoe(condition.getAgeLoe()))
+			.offset(pageable.getOffset())
+			.limit(pageable.getPageSize())
+			.fetch();
 
-        // 카운트 쿼리를 먼저하고 데이터가 없으면 본쿼리를 X
-        JPAQuery<Member> countQuery = queryFactory
-                .select(member)
-                .from(member)
-                .leftJoin(member.team, team)
-                .where(usernameEq(condition.getUsername()),
-                        teamNameEq(condition.getTeamName()),
-                        ageGoe(condition.getAgeGoe()),
-                        ageLoe(condition.getAgeLoe()));
+		// 카운트 쿼리를 먼저하고 데이터가 없으면 본쿼리를 X
+		JPAQuery<Member> countQuery = queryFactory
+			.select(member)
+			.from(member)
+			.leftJoin(member.team, team)
+			.where(usernameEq(condition.getUsername()),
+				teamNameEq(condition.getTeamName()),
+				ageGoe(condition.getAgeGoe()),
+				ageLoe(condition.getAgeLoe()));
 
-        return PageableExecutionUtils.getPage(results, pageable,countQuery::fetchCount);
-//        return new PageImpl<>(results, pageable, count);
-    }
+		return PageableExecutionUtils.getPage(results, pageable, countQuery::fetchCount);
+		//        return new PageImpl<>(results, pageable, count);
+	}
 
-    private BooleanExpression ageLoe(Integer ageLoe) {
-        return ageLoe != null ? member.age.loe(ageLoe) : null;
-    }
+	private BooleanExpression ageLoe(Integer ageLoe) {
+		return ageLoe != null ? member.age.loe(ageLoe) : null;
+	}
 
-    private BooleanExpression ageGoe(Integer ageGoe) {
-        return ageGoe != null ? member.age.goe(ageGoe) : null;
-    }
+	private BooleanExpression ageGoe(Integer ageGoe) {
+		return ageGoe != null ? member.age.goe(ageGoe) : null;
+	}
 
-    private BooleanExpression teamNameEq(String teamName) {
-        return hasText(teamName) ? team.name.eq(teamName) : null;
-    }
+	private BooleanExpression teamNameEq(String teamName) {
+		return hasText(teamName) ? team.name.eq(teamName) : null;
+	}
 
-    private BooleanExpression usernameEq(String username) {
-        return hasText(username) ? member.username.eq(username) : null;
-    }
+	private BooleanExpression usernameEq(String username) {
+		return hasText(username) ? member.username.eq(username) : null;
+	}
 
 }
